@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { api, type DayView, type HourPoint, type Summary } from "../api";
@@ -6,7 +6,9 @@ import { gw, gwh, longDay, mw, signedMw, ukDay, ukHour, ukTime } from "../format
 import { EASE, cssVar } from "../theme";
 import { BarCell, DataTable, DivergingCell, type Column } from "./DataTable";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClockArt, FloorArt, ReserveArt, TurbineArt } from "./art";
@@ -81,6 +83,7 @@ export function DayPanel({ day, days, decisionHour, typical, onDayChange }: Prop
           >
             <ChevronRight />
           </Button>
+          <DayPicker day={day} days={days} onDayChange={onDayChange} />
         </div>
         <div className="flex items-center gap-2.5">
           <Switch id="show-actual" checked={showActual} onCheckedChange={setShowActual} className="data-[state=checked]:bg-actual" />
@@ -173,4 +176,43 @@ function HourTable({ data, showActual, colors }: { data: DayView; showActual: bo
     );
   }
   return <DataTable rows={data.hours} columns={columns} rowKey={(h) => h.time} initialSort={{ key: "time", desc: false }} />;
+}
+
+// "2026-01-15" <-> a local Date, so the calendar shows the same calendar day.
+const toDate = (day: string) => {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+const toDay = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+// Calendar popup for jumping straight to a delivery day. Days outside the pilot are disabled.
+function DayPicker({ day, days, onDayChange }: { day: string; days: string[]; onDayChange: (day: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const first = toDate(days[0]);
+  const last = toDate(days[days.length - 1]);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="icon-lg" className="rounded-full" aria-label="Pick a delivery day">
+          <CalendarDays />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start" collisionPadding={16}>
+        <Calendar
+          mode="single"
+          selected={toDate(day)}
+          defaultMonth={toDate(day)}
+          startMonth={first}
+          endMonth={last}
+          weekStartsOn={1}
+          disabled={[{ before: first }, { after: last }]}
+          onSelect={(date) => {
+            if (!date) return;
+            onDayChange(toDay(date));
+            setOpen(false);
+          }}
+        />
+      </PopoverContent>
+    </Popover>
+  );
 }
