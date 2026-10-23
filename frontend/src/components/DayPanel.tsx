@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClockArt, FloorArt, ReserveArt, TurbineArt } from "./art";
 import { DayChart } from "./DayChart";
 import { Panel, Stat } from "./common";
+import { WhatHappened } from "./WhatHappened";
 
 type Props = { day: string; days: string[]; decisionHour: number; typical: Summary; onDayChange: (day: string) => void };
 
@@ -102,19 +103,15 @@ export function DayPanel({ day, days, decisionHour, typical, onDayChange }: Prop
 
       <AnimatePresence initial={false}>
         {showActual && (
-          <motion.p
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: EASE }}
             className="overflow-hidden"
           >
-            <span className="block rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">What happened.</span> {gwh(data.actual_mwh)} of wind turned up against {gwh(data.forecast_mwh)} forecast. The
-              forecast was off by {mw(data.summary.mae)} in a typical hour, and ran {mw(Math.abs(data.summary.bias))} {data.summary.bias < 0 ? "too high" : "too low"} on
-              average.
-            </span>
-          </motion.p>
+            <WhatHappened data={data} />
+          </motion.div>
         )}
       </AnimatePresence>
 
