@@ -22,8 +22,18 @@ export function Panel({ title, subtitle, children, action }: { title: string; su
         {subtitle && <CardDescription className="max-w-2xl">{subtitle}</CardDescription>}
         {action && <CardAction>{action}</CardAction>}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      {/* Content fills the card, so a chart can stretch when its neighbour in the row is taller. */}
+      <CardContent className="flex flex-1 flex-col">{children}</CardContent>
     </MotionCard>
+  );
+}
+
+// A chart area that grows to fill the rest of its card. Recharts needs a sized box, hence the absolute inner layer.
+export function ChartFill({ minHeight, children }: { minHeight: string; children: ReactNode }) {
+  return (
+    <div className="relative flex-1" style={{ minHeight }}>
+      <div className="absolute inset-0">{children}</div>
+    </div>
   );
 }
 

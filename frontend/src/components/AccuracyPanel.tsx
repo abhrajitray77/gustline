@@ -6,7 +6,7 @@ import { gw, gwh, hourLabel, mw, pct, shortDay, signedMw } from "../format";
 import { EASE, cssVar } from "../theme";
 import { BarCell, DataTable, DivergingCell, type Column } from "./DataTable";
 import { BiasArt, ReserveArt, ScatterArt, TailArt } from "./art";
-import { LegendItem, Panel, Stat, TooltipBox } from "./common";
+import { ChartFill, LegendItem, Panel, Stat, TooltipBox } from "./common";
 
 type Props = { data: Accuracy; onPickDay: (day: string) => void };
 
@@ -85,7 +85,7 @@ export function AccuracyPanel({ data, onPickDay }: Props) {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Error grows with lead time" subtitle="Typical error for every forecast in the window, grouped by how far ahead it was made.">
-          <div className="h-64">
+          <ChartFill minHeight="16rem">
             <ResponsiveContainer>
               <BarChart data={lead} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} onMouseLeave={() => setLeadHover(null)}>
                 <defs>
@@ -120,7 +120,7 @@ export function AccuracyPanel({ data, onPickDay }: Props) {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartFill>
         </Panel>
 
         <Panel title="Error by hour of day" subtitle="Typical error and bias for each delivery hour, UK time.">
@@ -128,7 +128,7 @@ export function AccuracyPanel({ data, onPickDay }: Props) {
             <LegendItem color={colors.forecast} label="Typical error" band />
             <LegendItem color={colors.actual} label="Bias" />
           </div>
-          <div className="h-56">
+          <ChartFill minHeight="14rem">
             <ResponsiveContainer>
               <ComposedChart data={data.by_hour} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} onMouseLeave={() => setHourHover(null)}>
                 <CartesianGrid stroke={colors.grid} strokeDasharray="3 6" vertical={false} />
@@ -159,13 +159,13 @@ export function AccuracyPanel({ data, onPickDay }: Props) {
                 <Line dataKey="bias" stroke={colors.actual} strokeWidth={2.5} dot={false} animationDuration={1000} animationBegin={300} />
               </ComposedChart>
             </ResponsiveContainer>
-          </div>
+          </ChartFill>
         </Panel>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="How big were the misses?" subtitle="Hours by actual minus forecast, in GW. Red is a shortfall the desk had to cover.">
-          <div className="h-64">
+          <ChartFill minHeight="16rem">
             <ResponsiveContainer>
               <BarChart data={data.histogram} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barCategoryGap={2} onMouseLeave={() => setBinHover(null)}>
                 <CartesianGrid stroke={colors.grid} strokeDasharray="3 6" vertical={false} />
@@ -196,7 +196,7 @@ export function AccuracyPanel({ data, onPickDay }: Props) {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartFill>
         </Panel>
 
         <Panel title="Day by day" subtitle="Typical error for each delivery day. Darker means a worse forecast. Click a day to open it.">
