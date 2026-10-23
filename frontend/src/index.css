@@ -1,0 +1,139 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+/* Dark mode follows the visitor's system setting (see main.tsx, which sets the .dark class). */
+@custom-variant dark (&:is(.dark *));
+
+/*
+  shadcn/ui tokens, set to the Gustline palette.
+  Chart colours (forecast, actual, short...) come from a palette checked for colour-blind safety.
+*/
+:root {
+  --radius: 0.75rem;
+
+  --background: #f9f9f7;
+  --foreground: #0b0b0b;
+  --card: #fcfcfb;
+  --card-foreground: #0b0b0b;
+  --popover: #fcfcfb;
+  --popover-foreground: #0b0b0b;
+  --primary: #0b0b0b;
+  --primary-foreground: #f9f9f7;
+  --secondary: #efeee9;
+  --secondary-foreground: #0b0b0b;
+  --muted: #efeee9;
+  --muted-foreground: #52514e;
+  --accent: #efeee9;
+  --accent-foreground: #0b0b0b;
+  --destructive: #d03b3b;
+  --border: rgba(11, 11, 11, 0.1);
+  --input: rgba(11, 11, 11, 0.14);
+  --ring: #2a78d6;
+
+  /* Gustline extras */
+  --faint: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --forecast: #2a78d6;
+  --actual: #eb6834;
+  --earlier: #c3c2b7;
+  --short: #e34948;
+  --over: #2a78d6;
+}
+
+.dark {
+  --background: #0d0d0d;
+  --foreground: #f0efec;
+  --card: #1a1a19;
+  --card-foreground: #f0efec;
+  --popover: #1a1a19;
+  --popover-foreground: #f0efec;
+  --primary: #f0efec;
+  --primary-foreground: #0d0d0d;
+  --secondary: #262624;
+  --secondary-foreground: #f0efec;
+  --muted: #262624;
+  --muted-foreground: #c3c2b7;
+  --accent: #262624;
+  --accent-foreground: #f0efec;
+  --destructive: #e66767;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #3987e5;
+
+  --faint: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --forecast: #3987e5;
+  --actual: #d95926;
+  --earlier: #4a4a46;
+  --short: #e66767;
+  --over: #3987e5;
+}
+
+@theme inline {
+  --font-sans: "Geist Variable", system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-faint: var(--faint);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+  --color-forecast: var(--forecast);
+  --color-actual: var(--actual);
+  --color-earlier: var(--earlier);
+  --color-short: var(--short);
+  --color-over: var(--over);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Tailwind's reset scales SVGs down to fit, which shrinks Recharts text when a grid
+   column narrows. Let Recharts size its own SVG instead. */
+.recharts-surface {
+  max-width: none;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
