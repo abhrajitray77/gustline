@@ -9,7 +9,7 @@ A day-ahead wind outlook for a GB energy supplier's trading desk. It answers two
 
 The pilot covers purchase decisions made in January 2026, so delivery days 2 January to 1 February 2026.
 
-**Live app:** _add the Vercel link here_
+**Live app:** https://gustline.vercel.app (API docs at https://gustline.vercel.app/api/docs)
 
 ## How it works
 
@@ -144,7 +144,7 @@ python -m scripts.fetch_data
 
 ## Deployment
 
-Deployed on Vercel. `vercel.json` builds the React app as static files and runs `api/index.py` as a Python function that serves the FastAPI app, with the saved data included. Requests to `/api/*` go to the function, everything else to the static app.
+Deployed on Vercel at https://gustline.vercel.app. `vercel.json` builds the React app as static files and runs `api/index.py` as a Python function that serves the FastAPI app, with the saved data included. Requests to `/api/*` go to the function, everything else to the static app.
 
 ## Next steps
 
