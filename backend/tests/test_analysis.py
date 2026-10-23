@@ -52,3 +52,54 @@ def test_summary_numbers():
     assert result["bias"] == 0
     assert result["rmse"] == pytest.approx(223.607, rel=1e-3)
     assert result["wape"] == 0.2
+
+
+def test_days_outside_the_window_are_left_out():
+    forecasts = pd.DataFrame(
+        {
+            "publish_time": [utc("2026-01-14 06:30"), utc("2026-01-30 06:30")],
+            "start_time": [utc("2026-01-15 12:00"), utc("2026-02-02 12:00")],
+            "generation": [5000, 6000],
+        }
+    )
+    picked = analysis.forecasts_at_decision(forecasts, "2026-01-02", "2026-02-01", decision_hour=9)
+    assert picked["start_time"].tolist() == [utc("2026-01-15 12:00")]
+
+
+def test_delivery_day_uses_uk_calendar_day():
+    # 23:30 UTC on 30 June is 00:30 on 1 July in UK summer time.
+    times = pd.Series([utc("2026-06-30 23:30")])
+    assert analysis.delivery_day(times)[0] == pd.Timestamp("2026-07-01")
+
+
+def test_reserve_covers_the_shortfall_in_nine_of_ten_hours():
+    # Ten hours, shortfalls of 0 to 900 MW.
+    errors = pd.Series([-100.0 * i for i in range(10)])
+    actual = pd.Series([1000.0] * 10)
+    result = analysis.summary(errors, actual)
+
+    assert result["buffer_p90"] == pytest.approx(810)
+    assert (-errors <= result["buffer_p90"]).mean() == 0.9
+    assert result["bias"] < 0
+
+
+def test_histogram_counts_every_hour():
+    errors = pd.Series([-1200.0, -300.0, 0.0, 250.0, 900.0])
+    bins = analysis.histogram(errors, width=500)
+    assert sum(b["count"] for b in bins) == len(errors)
+    assert all(b["high"] - b["low"] == 500 for b in bins)
+
+
+def test_daily_reports_worst_shortfall():
+    joined = pd.DataFrame(
+        {
+            "start_time": [utc("2026-01-15 10:00"), utc("2026-01-15 11:00")],
+            "day": [pd.Timestamp("2026-01-15")] * 2,
+            "forecast": [5000.0, 6000.0],
+            "actual": [4000.0, 6500.0],
+        }
+    ).assign(error=lambda d: d["actual"] - d["forecast"])
+
+    [day] = analysis.daily(joined)
+    assert day["worst_shortfall"] == 1000
+    assert day["worst_hour"].startswith("2026-01-15T10:00")
