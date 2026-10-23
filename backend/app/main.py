@@ -4,10 +4,11 @@ Data for the pilot (January 2026 decisions) is loaded once at startup from the
 files saved by scripts/fetch_data.py, so requests never wait on Elexon.
 """
 
+from datetime import date
 from functools import lru_cache
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import analysis
@@ -69,7 +70,9 @@ def accuracy(decision_hour: float = DecisionHour) -> Accuracy:
 
 
 @app.get("/api/day/{day}", response_model=DayView)
-def day_view(day: str, decision_hour: float = DecisionHour) -> DayView:
+def day_view(delivery_day: date = Path(alias="day"), decision_hour: float = DecisionHour) -> DayView:
+    # FastAPI rejects anything that is not a real date with a 422 before we get here.
+    day = delivery_day.isoformat()
     if not FIRST_DELIVERY_DAY <= day <= LAST_DELIVERY_DAY:
         raise HTTPException(404, f"Day must be between {FIRST_DELIVERY_DAY} and {LAST_DELIVERY_DAY}")
 
