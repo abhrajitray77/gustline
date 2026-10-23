@@ -1,5 +1,7 @@
 # Gustline
 
+[![CI](https://github.com/abhrajitray77/gustline/actions/workflows/ci.yml/badge.svg)](https://github.com/abhrajitray77/gustline/actions/workflows/ci.yml)
+
 A day-ahead wind outlook for a GB energy supplier's trading desk. It answers two questions:
 
 1. **What wind forecast did we have when we had to buy?** For each delivery day it shows the latest national wind forecast published before the day-ahead decision time, with older forecasts and a likely range around it.
@@ -59,6 +61,7 @@ At the 09:00 decision time:
 
 ```
 .
+├── .github/workflows/ci.yml  Runs every test, lint, type check and the Docker build on each push
 ├── api/index.py              Vercel entry point, exposes the FastAPI app as a Python function
 ├── backend/
 │   ├── app/
@@ -69,7 +72,7 @@ At the 09:00 decision time:
 │   │   └── config.py         Pilot window, file paths, default decision time
 │   ├── scripts/fetch_data.py Downloads and saves the January 2026 data
 │   ├── data/                 Saved data (compressed CSV)
-│   ├── tests/                Unit tests for the analysis
+│   ├── tests/                Analysis unit tests, API tests and checks on the saved data
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
@@ -77,7 +80,8 @@ At the 09:00 decision time:
 │   │   ├── api.ts            Typed API client
 │   │   ├── format.ts         Number and UK time formatting
 │   │   ├── components/       DayPanel (decision day), AccuracyPanel, DataTable, common building blocks
-│   │   └── components/ui/    shadcn/ui components (Radix based), added with the shadcn CLI
+│   │   ├── components/ui/    shadcn/ui components (Radix based), added with the shadcn CLI
+│   │   └── test/             Test setup and a small sample day used by the tests
 │   ├── nginx.conf            Serves the build and forwards /api in Docker
 │   └── Dockerfile
 ├── docker-compose.yml
@@ -120,9 +124,16 @@ Open http://localhost:5173. The dev server forwards `/api` to port 8000.
 ### Tests
 
 ```bash
+# Backend: forecast selection, metrics, every API endpoint, and checks on the saved data
 cd backend
 pytest
+
+# Frontend: formatting, chart maths, table sorting, the daily summary card, theme toggle
+cd frontend
+npm test
 ```
+
+The same checks, plus lint, the TypeScript build and the Docker build, run on GitHub Actions for every push (see the badge above).
 
 ### Refreshing the data
 
