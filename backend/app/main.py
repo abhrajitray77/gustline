@@ -21,7 +21,8 @@ from app.config import (
 )
 from app.schemas import Accuracy, DayView, Meta
 
-app = FastAPI(title="Gustline API", version="1.0.0")
+# Docs live under /api so they work behind the same /api route on Vercel and in Docker.
+app = FastAPI(title="Gustline API", version="1.0.0", docs_url="/api/docs", openapi_url="/api/openapi.json", redoc_url=None)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
 
 DATA = analysis.load(ACTUALS_FILE, FORECASTS_FILE)

@@ -118,6 +118,8 @@
   }
   html {
     @apply font-sans;
+    /* The full width footer uses 100vw, which includes the scrollbar. Clip so the page never scrolls sideways. */
+    overflow-x: clip;
   }
   body {
     @apply bg-background text-foreground antialiased;

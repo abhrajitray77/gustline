@@ -94,7 +94,7 @@ At the 09:00 decision time:
 docker compose up --build
 ```
 
-Open http://localhost:8080. The API is also on http://localhost:8000, with interactive docs at http://localhost:8000/docs.
+Open http://localhost:8080. Interactive API docs are at http://localhost:8080/api/docs (the API itself also runs on http://localhost:8000).
 
 ### Without Docker
 

@@ -6,6 +6,7 @@ import { DayPanel } from "./components/DayPanel";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Footer } from "./components/Footer";
 import { PillToggle } from "./components/common";
 import { shortDay } from "./format";
 import { EASE } from "./theme";
@@ -143,10 +144,7 @@ export default function App() {
           </motion.div>
         </AnimatePresence>
 
-        <footer className="mt-12 border-t pt-4 text-sm text-faint">
-          Data from Elexon BMRS: actual wind (FUELHH) and national wind forecasts (WINDFOR). Times in UK local time. Actuals are averaged to hourly to match
-          the forecasts. The GB day-ahead auctions close at about 09:20 (EPEX) and 09:50 (N2EX) UK time.
-        </footer>
+        <Footer />
       </div>
     </MotionConfig>
   );
