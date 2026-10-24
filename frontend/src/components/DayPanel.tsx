@@ -1,7 +1,7 @@
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
-import { api, type DayView, type HourPoint, type Summary } from "../api";
+import { Suspense, use, useEffect, useState } from "react";
+import { api, type DayView, type HourPoint } from "../api";
 import { gw, gwh, longDay, mw, signedMw, ukDay, ukHour, ukTime } from "../format";
 import { EASE, cssVar } from "../theme";
 import { BarCell, DataTable, DivergingCell, type Column } from "./DataTable";
@@ -15,77 +15,26 @@ import { ClockArt, FloorArt, ReserveArt, TurbineArt } from "./art";
 import { DayChart } from "./DayChart";
 import { Panel, Stat } from "./common";
 import { WhatHappened } from "./WhatHappened";
+import { ChartSkeleton, DayNavSkeleton, StatRowSkeleton, SummarySkeleton, TableSkeleton } from "./skeletons";
 
-type Props = { day: string; days: string[]; decisionHour: number; typical: Summary; onDayChange: (day: string) => void };
+type Props = { day: string; decisionHour: number; onDayChange: (day: string) => void };
 
-export function DayPanel({ day, days, decisionHour, typical, onDayChange }: Props) {
-  const [data, setData] = useState<DayView | null>(null);
-  const [error, setError] = useState<string | null>(null);
+// Each section reads its data with use() inside its own <Suspense>, so every part of the page
+// shows a placeholder of the right shape while it loads instead of the page collapsing.
+export function DayPanel({ day, decisionHour, onDayChange }: Props) {
   const [showActual, setShowActual] = useState(true);
   const [view, setView] = useState<"chart" | "table">("chart");
 
-  useEffect(() => {
-    let live = true;
-    api
-      .day(day, decisionHour)
-      .then((result) => live && (setData(result), setError(null)))
-      .catch((e: Error) => live && setError(e.message));
-    return () => {
-      live = false;
-    };
-  }, [day, decisionHour]);
-
-  const index = days.indexOf(day);
-
-  if (error) return <p className="text-short">Could not load {day}: {error}</p>;
-  if (!data) return <p className="text-faint">Loading…</p>;
-
-  const loading = data.day !== day || data.decision_hour !== decisionHour;
-  const lead = (new Date(data.hours[0].time).getTime() - new Date(data.decided_with).getTime()) / 3_600_000;
-  const colors = {
-    forecast: cssVar("--forecast"),
-    actual: cssVar("--actual"),
-    earlier: cssVar("--earlier"),
-    grid: cssVar("--grid"),
-    muted: cssVar("--faint"),
-    axis: cssVar("--axis"),
-    surface: cssVar("--card"),
-    short: cssVar("--short"),
-  };
+  // Start both requests now so they run side by side, not one after the other.
+  api.day(day, decisionHour);
+  api.accuracy(decisionHour);
 
   return (
-    <div className={`space-y-5 transition-opacity duration-300 ${loading ? "opacity-60" : ""}`}>
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon-lg" className="rounded-full" aria-label="Previous day" disabled={index <= 0} onClick={() => onDayChange(days[index - 1])}>
-            <ChevronLeft />
-          </Button>
-          <div className="relative overflow-hidden sm:min-w-64">
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.h2
-                key={day}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.25, ease: EASE }}
-                className="text-center text-base font-semibold sm:text-lg md:text-xl"
-              >
-                {longDay(day)}
-              </motion.h2>
-            </AnimatePresence>
-          </div>
-          <Button
-            variant="outline"
-            size="icon-lg"
-            className="rounded-full"
-            aria-label="Next day"
-            disabled={index >= days.length - 1}
-            onClick={() => onDayChange(days[index + 1])}
-          >
-            <ChevronRight />
-          </Button>
-          <DayPicker day={day} days={days} onDayChange={onDayChange} />
-        </div>
+        <Suspense fallback={<DayNavSkeleton />}>
+          <DayNav day={day} decisionHour={decisionHour} onDayChange={onDayChange} />
+        </Suspense>
         <div className="flex items-center gap-2.5">
           <Switch id="show-actual" checked={showActual} onCheckedChange={setShowActual} className="data-[state=checked]:bg-actual" />
           <Label htmlFor="show-actual" className="font-normal text-muted-foreground">
@@ -94,12 +43,9 @@ export function DayPanel({ day, days, decisionHour, typical, onDayChange }: Prop
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat index={0} art={<TurbineArt />} label="Wind expected" value={data.forecast_mwh} format={gwh} note={`Peak ${gw(Math.max(...data.hours.map((h) => h.forecast)))}`} />
-        <Stat index={1} art={<FloorArt />} label="Safe to count on" value={data.plan_mwh} format={gwh} note="Wind that turns up in 9 of 10 hours" />
-        <Stat index={2} art={<ReserveArt />} label="Hold in reserve" value={typical.buffer_p90} format={mw} note="Covers the wind shortfall in 9 of 10 hours" />
-        <Stat index={3} art={<ClockArt hour={ukHour(data.decided_with)} />} label="Forecast used" text={ukTime(data.decided_with)} note={`Published ${ukDay(data.decided_with)}, ${lead.toFixed(1)} h before delivery`} />
-      </div>
+      <Suspense fallback={<StatRowSkeleton />}>
+        <DayStats day={day} decisionHour={decisionHour} />
+      </Suspense>
 
       <AnimatePresence initial={false}>
         {showActual && (
@@ -110,7 +56,9 @@ export function DayPanel({ day, days, decisionHour, typical, onDayChange }: Prop
             transition={{ duration: 0.3, ease: EASE }}
             className="overflow-hidden"
           >
-            <WhatHappened data={data} />
+            <Suspense fallback={<SummarySkeleton />}>
+              <DaySummary day={day} decisionHour={decisionHour} />
+            </Suspense>
           </motion.div>
         )}
       </AnimatePresence>
@@ -127,24 +75,92 @@ export function DayPanel({ day, days, decisionHour, typical, onDayChange }: Prop
           </Tabs>
         }
       >
-        <AnimatePresence mode="wait" initial={false}>
-          {view === "chart" ? (
-            <motion.div key="chart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              <DayChart data={data} showActual={showActual} />
-            </motion.div>
-          ) : (
-            <motion.div key="table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              <HourTable data={data} showActual={showActual} colors={colors} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <Suspense fallback={view === "chart" ? <ChartSkeleton /> : <TableSkeleton rows={10} />}>
+          <DayDetail day={day} decisionHour={decisionHour} view={view} showActual={showActual} />
+        </Suspense>
       </Panel>
     </div>
   );
 }
 
+function DayNav({ day, decisionHour, onDayChange }: Props) {
+  const { days } = use(api.meta());
+  const index = days.indexOf(day);
 
+  // Fetch the neighbouring days in the background so the arrows feel instant.
+  useEffect(() => {
+    for (const next of [days[index - 1], days[index + 1]]) if (next) api.day(next, decisionHour).catch(() => {});
+  }, [days, index, decisionHour]);
 
+  return (
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="icon-lg" className="rounded-full" aria-label="Previous day" disabled={index <= 0} onClick={() => onDayChange(days[index - 1])}>
+        <ChevronLeft />
+      </Button>
+      <div className="relative overflow-hidden sm:min-w-64">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.h2
+            key={day}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: EASE }}
+            className="text-center text-base font-semibold sm:text-lg md:text-xl"
+          >
+            {longDay(day)}
+          </motion.h2>
+        </AnimatePresence>
+      </div>
+      <Button
+        variant="outline"
+        size="icon-lg"
+        className="rounded-full"
+        aria-label="Next day"
+        disabled={index >= days.length - 1}
+        onClick={() => onDayChange(days[index + 1])}
+      >
+        <ChevronRight />
+      </Button>
+      <DayPicker day={day} days={days} onDayChange={onDayChange} />
+    </div>
+  );
+}
+
+function DayStats({ day, decisionHour }: { day: string; decisionHour: number }) {
+  const data = use(api.day(day, decisionHour));
+  const typical = use(api.accuracy(decisionHour)).summary;
+  const lead = (new Date(data.hours[0].time).getTime() - new Date(data.decided_with).getTime()) / 3_600_000;
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <Stat index={0} art={<TurbineArt />} label="Wind expected" value={data.forecast_mwh} format={gwh} note={`Peak ${gw(Math.max(...data.hours.map((h) => h.forecast)))}`} />
+      <Stat index={1} art={<FloorArt />} label="Safe to count on" value={data.plan_mwh} format={gwh} note="Wind that turns up in 9 of 10 hours" />
+      <Stat index={2} art={<ReserveArt />} label="Hold in reserve" value={typical.buffer_p90} format={mw} note="Covers the wind shortfall in 9 of 10 hours" />
+      <Stat index={3} art={<ClockArt hour={ukHour(data.decided_with)} />} label="Forecast used" text={ukTime(data.decided_with)} note={`Published ${ukDay(data.decided_with)}, ${lead.toFixed(1)} h before delivery`} />
+    </div>
+  );
+}
+
+function DaySummary({ day, decisionHour }: { day: string; decisionHour: number }) {
+  return <WhatHappened data={use(api.day(day, decisionHour))} />;
+}
+
+function DayDetail({ day, decisionHour, view, showActual }: { day: string; decisionHour: number; view: "chart" | "table"; showActual: boolean }) {
+  const data = use(api.day(day, decisionHour));
+  const colors = { forecast: cssVar("--forecast"), short: cssVar("--short") };
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      {view === "chart" ? (
+        <motion.div key="chart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+          <DayChart data={data} showActual={showActual} />
+        </motion.div>
+      ) : (
+        <motion.div key="table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+          <HourTable data={data} showActual={showActual} colors={colors} />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 function HourTable({ data, showActual, colors }: { data: DayView; showActual: boolean; colors: Record<string, string> }) {
   const maxForecast = Math.max(...data.hours.map((h) => h.forecast));

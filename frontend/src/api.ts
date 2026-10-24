@@ -65,14 +65,25 @@ export type DayView = {
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
-async function get<T>(path: string): Promise<T> {
+async function load<T>(path: string): Promise<T> {
   const response = await fetch(`${BASE}${path}`);
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
   return response.json() as Promise<T>;
+}
+
+// One promise per URL. Components read them with React's use() inside <Suspense>, which needs
+// the same promise on every render. It also means a day you have already seen opens instantly.
+const cache = new Map<string, Promise<unknown>>();
+
+function get<T>(path: string): Promise<T> {
+  if (!cache.has(path)) cache.set(path, load<T>(path));
+  return cache.get(path) as Promise<T>;
 }
 
 export const api = {
   meta: () => get<Meta>("/api/meta"),
   accuracy: (decisionHour: number) => get<Accuracy>(`/api/accuracy?decision_hour=${decisionHour}`),
   day: (day: string, decisionHour: number) => get<DayView>(`/api/day/${day}?decision_hour=${decisionHour}`),
+  // Forget everything, so a retry after an error fetches again.
+  clear: () => cache.clear(),
 };

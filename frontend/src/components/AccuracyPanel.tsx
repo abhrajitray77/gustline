@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
-import { useState } from "react";
+import { use, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { Accuracy, DayStats } from "../api";
+import { api, type Accuracy, type DayStats } from "../api";
 import { gw, gwh, hourLabel, mw, pct, shortDay, signedMw } from "../format";
 import { EASE, cssVar } from "../theme";
 import { BarCell, DataTable, DivergingCell, type Column } from "./DataTable";
@@ -10,7 +10,9 @@ import { ChartFill, LegendItem, Panel, Stat, TooltipBox } from "./common";
 
 type Props = { data: Accuracy; onPickDay: (day: string) => void };
 
-export function AccuracyPanel({ data, onPickDay }: Props) {
+// Reads the accuracy data with use(), so the parent's <Suspense> shows a skeleton until it arrives.
+export function AccuracyPanel({ decisionHour, onPickDay }: { decisionHour: number; onPickDay: (day: string) => void }) {
+  const data = use(api.accuracy(decisionHour));
   const s = data.summary;
   const colors = {
     forecast: cssVar("--forecast"),
