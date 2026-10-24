@@ -19,8 +19,9 @@ export function Panel({ title, subtitle, children, action }: { title: string; su
     >
       <CardHeader>
         <CardTitle className="font-semibold">{title}</CardTitle>
-        {subtitle && <CardDescription className="max-w-2xl">{subtitle}</CardDescription>}
-        {action && <CardAction>{action}</CardAction>}
+        {/* On phones the action sits beside the title only, and the description takes the full width below. */}
+        {subtitle && <CardDescription className="max-w-2xl max-sm:col-span-2">{subtitle}</CardDescription>}
+        {action && <CardAction className="max-sm:row-[1/2]">{action}</CardAction>}
       </CardHeader>
       {/* Content fills the card, so a chart can stretch when its neighbour in the row is taller. */}
       <CardContent className="flex flex-1 flex-col">{children}</CardContent>
