@@ -67,6 +67,11 @@ export function AccuracyPanel({ decisionHour, onPickDay }: { decisionHour: numbe
                 waiting for the latest publish before the auction closes is worth it.
               </>
             ),
+            <>
+              The bias is steady enough to correct. Adding the average miss of the last {data.correction_window_days} days cuts the typical error by{" "}
+              <b className="text-foreground">{pct(1 - data.corrected.mae / s.mae)}</b> and the reserve needed for 90% cover from {gw(s.buffer_p90)} to{" "}
+              <b className="text-foreground">{gw(data.corrected.buffer_p90)}</b>.
+            </>,
           ]
             .filter(Boolean)
             .map((item, i) => (
@@ -84,6 +89,8 @@ export function AccuracyPanel({ decisionHour, onPickDay }: { decisionHour: numbe
             ))}
         </ul>
       </Panel>
+
+      <CorrectionPanel data={data} />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Error grows with lead time" subtitle="Typical error for every forecast in the window, grouped by how far ahead it was made.">
@@ -301,4 +308,45 @@ function DailyTable({ data, onPickDay, colors }: Props & { colors: Record<string
     },
   ];
   return <DataTable rows={data.daily} columns={columns} rowKey={(d) => d.day} onRowClick={(d) => onPickDay(d.day)} initialSort={{ key: "day", desc: false }} />;
+}
+
+// Raw forecast against the bias corrected one, on the same hours. Lower is better for every row.
+function CorrectionPanel({ data }: { data: Accuracy }) {
+  const raw = data.summary;
+  const fixed = data.corrected;
+  const rows = [
+    { label: "Typical error (MAE)", raw: raw.mae, fixed: fixed.mae, format: mw },
+    { label: "Large misses (RMSE)", raw: raw.rmse, fixed: fixed.rmse, format: mw },
+    { label: "Bias", raw: Math.abs(raw.bias), fixed: Math.abs(fixed.bias), format: mw, note: "size, ignoring sign" },
+    { label: "Reserve for 90% cover", raw: raw.buffer_p90, fixed: fixed.buffer_p90, format: gw },
+    { label: "Reserve for 95% cover", raw: raw.buffer_p95, fixed: fixed.buffer_p95, format: gw },
+  ];
+  return (
+    <Panel
+      title="With a simple bias correction"
+      subtitle={`Each morning, add the average miss of the last ${data.correction_window_days} delivery days the desk could already see. Same hours, same decision time, nothing from the future.`}
+    >
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {rows.map((row, i) => {
+          const drop = 1 - row.fixed / row.raw;
+          return (
+            <motion.div
+              key={row.label}
+              initial={{ opacity: 0, y: 8 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, ease: EASE, delay: i * 0.06 }}
+              className="rounded-xl border p-4"
+            >
+              <p className="text-sm text-muted-foreground">{row.label}</p>
+              <p className="mt-2 text-xl font-semibold tracking-tight whitespace-nowrap text-corrected tabular">{row.format(row.fixed)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                was <span className="tabular line-through">{row.format(row.raw)}</span>, {pct(drop)} lower{row.note ? `, ${row.note}` : ""}
+              </p>
+            </motion.div>
+          );
+        })}
+      </div>
+    </Panel>
+  );
 }

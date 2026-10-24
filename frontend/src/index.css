@@ -41,6 +41,7 @@
   --earlier: #c3c2b7;
   --short: #e34948;
   --over: #2a78d6;
+  --corrected: #6250d6;
 }
 
 .dark {
@@ -71,6 +72,7 @@
   --earlier: #4a4a46;
   --short: #e66767;
   --over: #3987e5;
+  --corrected: #9085e9;
 }
 
 @theme inline {
@@ -104,6 +106,7 @@
   --color-earlier: var(--earlier);
   --color-short: var(--short);
   --color-over: var(--over);
+  --color-corrected: var(--corrected);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);

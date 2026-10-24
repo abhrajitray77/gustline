@@ -3,6 +3,7 @@ import type { DayView } from "../api";
 export type Point = {
   t: number;
   forecast: number;
+  corrected?: number;
   actual?: number;
   band?: [number, number];
   // The gap between forecast and actual, split by sign so each side gets its own colour.
@@ -23,7 +24,7 @@ export function buildPoints(data: DayView): Point[] {
     }
   });
 
-  const hours = data.hours.map((h) => ({ t: new Date(h.time).getTime(), forecast: h.forecast, actual: h.actual, band: [h.low, h.high] as [number, number] }));
+  const hours = data.hours.map((h) => ({ t: new Date(h.time).getTime(), forecast: h.forecast, corrected: h.corrected, actual: h.actual, band: [h.low, h.high] as [number, number] }));
   const points: Point[] = [];
 
   hours.forEach((h, i) => {

@@ -16,6 +16,7 @@ export const summary: Summary = {
 const hour = (time: string, forecast: number, actual: number): HourPoint => ({
   time,
   forecast,
+  corrected: forecast,
   actual,
   error: actual - forecast,
   low: forecast - 800,
@@ -38,4 +39,5 @@ export const day: DayView = {
   forecast_mwh: 18000,
   actual_mwh: 17100,
   plan_mwh: 15600,
+  correction: null,
 };

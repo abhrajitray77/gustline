@@ -56,6 +56,7 @@ At the 09:00 decision time:
 - The forecast ran **about 1.7 GW too high on average** and would have left the desk short in about 85% of hours if taken at face value. A likely cause is that actual metered output falls when wind farms are paid to turn down during grid congestion, which the forecast does not include. That needs confirming with more data.
 - Holding about **4.1 GW** of reserve on top of the forecast would have covered the shortfall in 9 of 10 hours, and **5.3 GW** in 19 of 20.
 - Error grows by about 43% from the freshest forecasts to ones made 60 hours ahead.
+- A simple bias correction helps. Each morning, add the average miss of the last 7 delivery days the desk could already see (days up to D-2 for delivery day D, so nothing from the future). That cuts the typical error from 2,039 to 1,687 MW (17%) and the reserve for 90% cover from 4.1 to 3.3 GW. It helps on 19 of 31 days and hurts right after the wind changes regime. The app shows it as a toggle on the chart and as a comparison on the accuracy tab.
 
 ## Project layout
 
@@ -149,7 +150,7 @@ Deployed on Vercel at https://gustline.vercel.app. `vercel.json` builds the Reac
 ## Next steps
 
 - Load the latest forecast automatically each morning and show tomorrow, not just the pilot window.
-- Break the bias down to confirm the curtailment explanation, and offer a bias-corrected forecast.
+- Break the bias down to confirm the curtailment explanation, and replace the simple 7 day bias correction with one that adapts faster (for example by hour of day and wind level).
 - Add solar and demand forecasts so the desk sees the full residual demand it needs to buy for.
 
 ## Use of AI tools

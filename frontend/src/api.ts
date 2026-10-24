@@ -39,11 +39,14 @@ export type Accuracy = {
   by_lead: { lead_from: number; lead_to: number; mae: number; rmse: number; samples: number }[];
   histogram: { low: number; high: number; count: number }[];
   daily: DayStats[];
+  corrected: Summary;
+  correction_window_days: number;
 };
 
 export type HourPoint = {
   time: string;
   forecast: number;
+  corrected: number;
   actual: number;
   error: number;
   low: number;
@@ -61,6 +64,7 @@ export type DayView = {
   forecast_mwh: number;
   actual_mwh: number;
   plan_mwh: number;
+  correction: number | null;
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
