@@ -103,3 +103,24 @@ def test_daily_reports_worst_shortfall():
     [day] = analysis.daily(joined)
     assert day["worst_shortfall"] == 1000
     assert day["worst_hour"].startswith("2026-01-15T10:00")
+
+
+def test_bias_correction_only_uses_days_finished_before_the_decision():
+    # Three delivery days. Day 1 ran 1,000 short, day 2 ran 3,000 short.
+    days = [pd.Timestamp(d) for d in ("2026-01-02", "2026-01-03", "2026-01-04")]
+    joined = pd.DataFrame(
+        {
+            "day": days,
+            "forecast": [5000.0, 5000.0, 5000.0],
+            "actual": [4000.0, 2000.0, 4500.0],
+        }
+    ).assign(error=lambda d: d["actual"] - d["forecast"])
+
+    out = analysis.with_bias_correction(joined, window_days=7)
+
+    # Days 1 and 2 have no finished day before their decision morning, so no correction.
+    assert out["correction"].iloc[:2].isna().all()
+    assert out["corrected"].iloc[0] == 5000
+    # Day 3 is decided on the morning of day 2, so it can only see day 1, not day 2.
+    assert out["correction"].iloc[2] == -1000
+    assert out["corrected"].iloc[2] == 4000

@@ -62,11 +62,15 @@ class Accuracy(BaseModel):
     by_lead: list[LeadError]
     histogram: list[Bin]
     daily: list[DayStats]
+    # The same summary for the bias corrected forecast, and the look-back it used.
+    corrected: Summary
+    correction_window_days: int
 
 
 class HourPoint(BaseModel):
     time: str
     forecast: float
+    corrected: float
     actual: float
     error: float
     low: float
@@ -99,3 +103,5 @@ class DayView(BaseModel):
     forecast_mwh: float
     actual_mwh: float
     plan_mwh: float
+    # MW added to every hour by the bias correction. None for the first days, which have no history yet.
+    correction: float | None

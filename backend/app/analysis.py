@@ -15,7 +15,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from app.config import UK_TZ
+from app.config import BIAS_WINDOW_DAYS, UK_TZ
 
 
 @dataclass
@@ -66,6 +66,23 @@ def forecasts_at_decision(
 def with_actuals(selected: pd.DataFrame, actual_hourly: pd.Series) -> pd.DataFrame:
     joined = selected.join(actual_hourly.rename("actual"), on="start_time").dropna(subset=["actual"])
     return joined.assign(error=joined["actual"] - joined["forecast"])
+
+
+def with_bias_correction(joined: pd.DataFrame, window_days: int = BIAS_WINDOW_DAYS) -> pd.DataFrame:
+    """Add a bias corrected forecast, using only what the desk knew at decision time.
+
+    For delivery day D the desk decides on the morning of D-1, so the last day with complete
+    actuals is D-2. The correction is the average error over the last `window_days` complete days.
+    Early days with no history get no correction (NaN), and the corrected forecast equals the raw one.
+    """
+    daily_bias = joined.groupby("day")["error"].mean()
+    all_days = pd.date_range(daily_bias.index.min(), daily_bias.index.max(), freq="D")
+    known = daily_bias.reindex(all_days).shift(2)  # day D only sees days up to D-2
+    correction = known.rolling(window_days, min_periods=1).mean()
+
+    out = joined.join(correction.rename("correction"), on="day")
+    corrected = (out["forecast"] + out["correction"].fillna(0)).clip(lower=0)
+    return out.assign(corrected=corrected, corrected_error=out["actual"] - corrected)
 
 
 def summary(errors: pd.Series, actual: pd.Series) -> dict:

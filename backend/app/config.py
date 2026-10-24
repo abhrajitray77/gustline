@@ -14,3 +14,6 @@ LAST_DELIVERY_DAY = "2026-02-01"
 # The GB day-ahead auctions close around 09:20 (EPEX) and 09:50 (N2EX) UK time
 # on the day before delivery. By default the trader decides at 09:00.
 DEFAULT_DECISION_HOUR = 9
+
+# The bias corrected forecast adds the average error of the last 7 complete delivery days.
+BIAS_WINDOW_DAYS = 7

@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import analysis
 from app.config import (
     ACTUALS_FILE,
+    BIAS_WINDOW_DAYS,
     DEFAULT_DECISION_HOUR,
     FIRST_DELIVERY_DAY,
     FORECASTS_FILE,
@@ -35,7 +36,7 @@ DecisionHour = Query(DEFAULT_DECISION_HOUR, ge=0, le=23.5, description="UK local
 @lru_cache(maxsize=64)
 def joined_for(decision_hour: float) -> pd.DataFrame:
     selected = analysis.forecasts_at_decision(DATA.forecasts, FIRST_DELIVERY_DAY, LAST_DELIVERY_DAY, decision_hour)
-    return analysis.with_actuals(selected, ACTUAL_HOURLY)
+    return analysis.with_bias_correction(analysis.with_actuals(selected, ACTUAL_HOURLY))
 
 
 @app.get("/api/health")
@@ -66,6 +67,8 @@ def accuracy(decision_hour: float = DecisionHour) -> Accuracy:
         by_lead=analysis.by_lead_time(DATA.forecasts, ACTUAL_HOURLY, FIRST_DELIVERY_DAY, LAST_DELIVERY_DAY),
         histogram=analysis.histogram(joined["error"]),
         daily=analysis.daily(joined),
+        corrected=analysis.summary(joined["corrected_error"], joined["actual"]),
+        correction_window_days=BIAS_WINDOW_DAYS,
     )
 
 
@@ -111,6 +114,7 @@ def day_view(delivery_day: date = Path(alias="day"), decision_hour: float = Deci
             {
                 "time": row.start_time.isoformat(),
                 "forecast": float(row.forecast),
+                "corrected": float(row.corrected),
                 "actual": float(row.actual),
                 "error": float(row.error),
                 "low": max(0.0, float(row.forecast + stats["p10_error"])),
@@ -127,4 +131,5 @@ def day_view(delivery_day: date = Path(alias="day"), decision_hour: float = Deci
         forecast_mwh=float(today["forecast"].sum()),
         actual_mwh=float(today["actual"].sum()),
         plan_mwh=float((today["forecast"] + stats["p10_error"]).clip(lower=0).sum()),
+        correction=None if pd.isna(today["correction"].iloc[0]) else float(today["correction"].iloc[0]),
     )

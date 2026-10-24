@@ -64,3 +64,19 @@ def test_days_outside_the_pilot_are_not_found(client, day):
 @pytest.mark.parametrize("path", ["/api/day/banana", "/api/day/2026-13-01", "/api/accuracy?decision_hour=30"])
 def test_bad_input_is_rejected(client, path):
     assert client.get(path).status_code == 422
+
+
+def test_bias_correction_reduces_error(client):
+    data = client.get("/api/accuracy").json()
+    raw, corrected = data["summary"], data["corrected"]
+    assert data["correction_window_days"] == 7
+    assert corrected["mae"] < raw["mae"]
+    assert abs(corrected["bias"]) < abs(raw["bias"])
+
+
+def test_day_view_has_corrected_forecast(client):
+    first = client.get("/api/day/2026-01-02").json()
+    later = client.get("/api/day/2026-01-15").json()
+    assert first["correction"] is None
+    assert all(h["corrected"] == h["forecast"] for h in first["hours"])
+    assert later["correction"] < 0
